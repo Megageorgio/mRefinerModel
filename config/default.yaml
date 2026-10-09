@@ -1,0 +1,36 @@
+# mRefinerModel: learns from real errors of the first stage (--pred-train) plus random shifts of the reference.
+frontend:
+  sample_rate: 16000
+  hop_ms: 2.5
+  win_ms: 15.0
+  n_fft: 512
+  n_mels: 80
+  half_window_frames: 48      # 48 * 2.5 ms = ±120 ms around a boundary
+model:
+  channels: 192
+  phone_emb: 32
+  context: 2                  # phonemes on each side
+  use_durations: true         # lengths of the two neighbours as the first stage put them
+  kernel: 5
+  dilations: [1, 2, 4, 8, 16, 1, 2, 4]
+  dropout: 0.1
+training:
+  batch_boundaries: 512
+  per_chunk: 64
+  real_frac: 0.7              # share of files where windows sit on the first-stage boundaries
+  real_extra_jitter_ms: 3.0
+  jitter_ms: 15.0             # random shifts: Laplace scale
+  max_jitter_ms: 100.0
+  lr: 0.001
+  lr_decay_gamma: 0.95
+  weight_decay: 0.01
+  max_epochs: 100
+  patience: 10
+inference:
+  min_confidence: 0.0         # mode "normal": move a boundary only when at least this sure
+  max_shift_ms: 60.0          # mode "normal": a boundary never moves farther
+  safe_min_confidence: 0.2    # mode "safe"
+  safe_max_shift_ms: 40.0
+  auto_safe_unknown_share: 0.5  # mode "auto": safe when more phonemes than this are unknown
+  min_phone_ms: 10.0
+  passes: 1
